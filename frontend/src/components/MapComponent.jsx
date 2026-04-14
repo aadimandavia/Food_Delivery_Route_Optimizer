@@ -1,6 +1,7 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
+import axios from 'axios';
 import 'leaflet/dist/leaflet.css';
 
 // Fix Leaflet marker icons in React
@@ -43,14 +44,59 @@ function ZoomToFit({ locations }) {
 }
 
 const MapComponent = ({ locations, onMapClick, results, selectedAlgorithms }) => {
+  const [roadGeometries, setRoadGeometries] = useState({});
   const center = [13.0827, 80.2707]; // Chennai default
+
+  // Fetch road paths when results change
+  useEffect(() => {
+    const fetchGeometries = async () => {
+      if (!results) {
+        setRoadGeometries({});
+        return;
+      }
+
+      const newGeometries = {};
+      const uniqueRoutes = new Set();
+      
+      // Identify unique routes to avoid duplicate API calls
+      Object.entries(results).forEach(([algo, data]) => {
+        const routeStr = data.route.join(',');
+        uniqueRoutes.add(routeStr);
+      });
+
+      for (const routeStr of uniqueRoutes) {
+        const routeIndices = routeStr.split(',').map(Number);
+        const coords = routeIndices.map(idx => `${locations[idx].lng},${locations[idx].lat}`).join(';');
+        // Add start point to end to complete the loop
+        const fullCoords = `${coords};${locations[routeIndices[0]].lng},${locations[routeIndices[0]].lat}`;
+        
+        try {
+          const response = await axios.get(`https://router.project-osrm.org/route/v1/driving/${fullCoords}?overview=full&geometries=geojson`);
+          if (response.data.code === 'Ok') {
+            // GeoJSON coordinates are [lng, lat], Leaflet needs [lat, lng]
+            const path = response.data.routes[0].geometry.coordinates.map(coord => [coord[1], coord[0]]);
+            newGeometries[routeStr] = path;
+          }
+        } catch (error) {
+          console.error('Error fetching road geometry:', error);
+          // Fallback to straight lines if OSRM fails
+          const path = routeIndices.map(idx => [locations[idx].lat, locations[idx].lng]);
+          path.push([locations[routeIndices[0]].lat, locations[routeIndices[0]].lng]);
+          newGeometries[routeStr] = path;
+        }
+      }
+      setRoadGeometries(newGeometries);
+    };
+
+    fetchGeometries();
+  }, [results, locations]);
 
   const drawRoute = (algo) => {
     if (!results || !results[algo]) return null;
-    const routeIndices = results[algo].route;
-    const path = routeIndices.map(idx => [locations[idx].lat, locations[idx].lng]);
-    // Close the loop
-    path.push([locations[routeIndices[0]].lat, locations[routeIndices[0]].lng]);
+    const routeStr = results[algo].route.join(',');
+    const path = roadGeometries[routeStr];
+    
+    if (!path) return null;
     
     return (
       <Polyline

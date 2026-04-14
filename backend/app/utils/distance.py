@@ -1,4 +1,6 @@
 import math
+import requests
+import time
 
 def haversine(lat1, lon1, lat2, lon2):
     """
@@ -34,3 +36,25 @@ def generate_distance_matrix(locations):
             matrix[j][i] = dist
             
     return matrix
+
+def generate_road_distance_matrix(locations):
+    """
+    Generate a distance matrix using OSRM Table Service (Road Routing).
+    locations: list of dicts with 'lat' and 'lng'
+    """
+    coords = ";".join([f"{loc['lng']},{loc['lat']}" for loc in locations])
+    url = f"https://router.project-osrm.org/table/v1/driving/{coords}?annotations=distance"
+    
+    try:
+        response = requests.get(url, timeout=10)
+        data = response.json()
+        
+        if data.get("code") == "Ok":
+            # Convert distances from meters to kilometers
+            matrix = [[d / 1000.0 for d in row] for row in data["distances"]]
+            return matrix
+    except Exception as e:
+        print(f"OSRM Table API failed: {e}. Falling back to Haversine.")
+    
+    # Fallback to Haversine if API fails
+    return generate_distance_matrix(locations)

@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import List
 from app.algorithms.tsp import brute_force_tsp, held_karp_tsp, greedy_tsp, two_opt_tsp
-from app.utils.distance import generate_distance_matrix
+from app.utils.distance import generate_road_distance_matrix
 
 router = APIRouter()
 
@@ -21,8 +21,8 @@ async def optimize_route(request: OptimizeRequest):
     if len(locations) < 3:
         raise HTTPException(status_code=400, detail="At least 3 locations are required for TSP.")
     
-    # 1. Generate Distance Matrix
-    dist_matrix = generate_distance_matrix(locations)
+    # 1. Generate Distance Matrix (Road-Based)
+    dist_matrix = generate_road_distance_matrix(locations)
     
     # 2. Run Algorithms
     results = {}
