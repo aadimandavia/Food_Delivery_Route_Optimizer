@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import MapComponent, { COLORS } from './components/MapComponent';
 import { optimizeRoute, sampleLocations } from './services/api';
-import { 
-  MapPin, 
-  Navigation, 
-  Trash2, 
-  Loader2, 
-  Info, 
-  BarChart3, 
+import {
+  MapPin,
+  Navigation,
+  Trash2,
+  Loader2,
+  Info,
+  BarChart3,
   Plus,
   Zap
 } from 'lucide-react';
@@ -22,14 +22,16 @@ const App = () => {
 
   const handleMapClick = (latlng) => {
     if (locations.length >= 12) {
-      setError("Maximum 12 locations allowed for performance reasons.");
+      setError("Maximum 12 nodes for performance");
       return;
     }
+    const isFirst = locations.length === 0;
     const newLoc = {
       id: Date.now(),
       lat: latlng.lat,
       lng: latlng.lng,
-      name: `Point ${locations.length + 1}`
+      name: isFirst ? "🏠 Starting Hub" : `📍 Stop ${locations.length}`,
+      isHub: isFirst
     };
     setLocations([...locations, newLoc]);
     setResults(null);
@@ -115,8 +117,8 @@ const App = () => {
         </section>
 
         {error && (
-          <motion.div 
-            initial={{ opacity: 0, y: -10 }} 
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             style={{ color: 'var(--error)', fontSize: '0.8rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '4px' }}
           >
@@ -141,10 +143,14 @@ const App = () => {
                     key={loc.id}
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: 20 }}
+                    exit={{ opacity: 0, x: -20 }}
                     className="location-item"
+                    style={{ borderLeft: loc.isHub ? '3px solid var(--success)' : '1px solid var(--glass-border)' }}
                   >
-                    <span>{loc.name || `Point ${loc.id}`}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <div style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: loc.isHub ? 'var(--success)' : 'var(--text-dim)' }} />
+                      <span style={{ fontSize: '0.85rem', fontWeight: loc.isHub ? 700 : 400 }}>{loc.name}</span>
+                    </div>
                     <button className="remove-btn" onClick={() => removeLocation(loc.id)}>
                       <Trash2 size={14} />
                     </button>
@@ -171,10 +177,10 @@ const App = () => {
                 </thead>
                 <tbody>
                   {Object.entries(results).map(([algo, data]) => (
-                    <tr 
-                      key={algo} 
+                    <tr
+                      key={algo}
                       onClick={() => toggleAlgo(algo)}
-                      style={{ 
+                      style={{
                         cursor: 'pointer',
                         opacity: selectedAlgos.includes(algo) ? 1 : 0.4,
                         background: selectedAlgos.includes(algo) ? 'rgba(255,255,255,0.03)' : 'transparent',
@@ -204,19 +210,19 @@ const App = () => {
       </aside>
 
       <main className="main-content">
-        <MapComponent 
-          locations={locations} 
-          onMapClick={handleMapClick} 
-          results={results} 
+        <MapComponent
+          locations={locations}
+          onMapClick={handleMapClick}
+          results={results}
           selectedAlgorithms={selectedAlgos}
         />
-        
+
         <div className="legend">
           <h4 style={{ fontSize: '0.75rem', marginBottom: '0.5rem' }}>Route Legend</h4>
           {Object.entries(COLORS).map(([algo, color]) => (
-            <div 
-              key={algo} 
-              className="legend-item" 
+            <div
+              key={algo}
+              className="legend-item"
               onClick={() => toggleAlgo(algo)}
               style={{ cursor: 'pointer', opacity: selectedAlgos.includes(algo) ? 1 : 0.4 }}
             >

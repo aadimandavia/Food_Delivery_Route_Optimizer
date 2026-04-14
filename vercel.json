@@ -2,14 +2,14 @@
   "buildCommand": "npm run vercel-build",
   "outputDirectory": "frontend/dist",
   "functions": {
-    "backend/app/main.py": {
+    "api/main.py": {
       "runtime": "@vercel/python"
     }
   },
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "backend/app/main.py"
+      "destination": "api/main.py"
     },
     {
       "source": "/(.*)",

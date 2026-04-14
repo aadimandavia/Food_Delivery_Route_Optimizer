@@ -14,6 +14,15 @@ let DefaultIcon = L.icon({
   iconSize: [25, 41],
   iconAnchor: [12, 41]
 });
+
+// Create a custom Green Hub Icon (or use a Rider Icon image if available)
+let HubIcon = L.icon({
+  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
+  shadowUrl: iconShadow,
+  iconSize: [25, 41],
+  iconAnchor: [12, 41]
+});
+
 L.Marker.prototype.options.icon = DefaultIcon;
 
 const COLORS = {
@@ -120,7 +129,11 @@ const MapComponent = ({ locations, onMapClick, results, selectedAlgorithms }) =>
       <MapEvents onMapClick={onMapClick} />
       
       {locations.map((loc, index) => (
-        <Marker key={loc.id} position={[loc.lat, loc.lng]}>
+        <Marker 
+          key={loc.id} 
+          position={[loc.lat, loc.lng]}
+          icon={index === 0 ? HubIcon : DefaultIcon}
+        >
           <Popup>
             <strong>{loc.name || `Location ${index + 1}`}</strong>
             <br />
